@@ -1,15 +1,6 @@
-id,nombre,edad
-001,Andres,20
-002,Maria,18
-003,Carlos,21
-004,Ana,17
-005,Jostyn,22
-006,Belén,19
-007,Diego,17
-008,Anai,20
-009,Omar,23
-010,Jordy,20
-011,Sofia,16
-012,Andres,20
-013,Mateo,21
-014,Valeria,18
+id,nombre,edad,carrera
+1,Ana Torres,20,Computacion
+2,Carlos Mendoza,22,Industrial
+3,Elena Gomez,19,Computacion
+4,David Ruiz,25,Civil
+5,Lucia Fernandez,21,Disenio Grafico

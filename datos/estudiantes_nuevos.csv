@@ -1,4 +1,11 @@
-id,nombre,edad
-013,Luis,22
-014,Elena,19
-002,Maria,18
+id,nombre,edad,carrera
+6,Sofia Morales,18,Alimentos
+7,Mateo Lopez,20,Industrial
+8,Valeria Castro,23,Civil
+9,Gabriel Silva,21,Civil
+10,Camila Vargas,19,Ambiental
+11,Jordy Andrade,19,Computacion
+12,Maria Belen,19,Computacion
+13,Jostyn Flores,20,Computacion
+14,Omar Flores,18,Computacion
+15,Diego Beltran,19,Computacion

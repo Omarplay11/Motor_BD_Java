@@ -1,7 +1,8 @@
-id_curso,materia,paralelo
-101,Matematicas Discretas,P5
-102,Bases de Datos,P1
-103,Estructuras de Datos,P2
-104,Sistemas Operativos,P3
-105,Estadistica,P4
-106,Comunicacion,p1
+id_curso,nombre_curso,creditos,semestre
+101,Bases de Datos,4,3
+102,Programacion Orientada a Objetos,4,2
+103,Algebra Relacional,3,4
+104,Estructuras de Datos,4,3
+105,Redes de Computadoras,3,5
+106,Matematicas Discretas,3,3
+107,Dibujo 1,3,1

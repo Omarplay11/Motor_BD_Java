@@ -1,7 +1,10 @@
 package motor;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +34,7 @@ public class MainGUI {
         JPanel panelControles = new JPanel(new GridBagLayout());
         panelControles.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5); // Margen interno entre componentes
+        gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         JComboBox<String> comboOperacion = new JComboBox<>(new String[]{
@@ -49,7 +52,7 @@ public class MainGUI {
         }
 
         // --- CONTROLES DINÁMICOS PARA PARÁMETROS Y SELECCIÓN ---
-        JTextField campoParametrosProyeccion = new JTextField("nombre, edad");
+        JTextField campoParametrosProyeccion = new JTextField("*");
         
         JComboBox<String> comboAtributosTabla1 = new JComboBox<>();
         JComboBox<String> comboOperador = new JComboBox<>(new String[]{"=", ">", "<", ">=", "<=", "!="});
@@ -58,7 +61,7 @@ public class MainGUI {
         // Panel contenedor dinámico (CardLayout)
         JPanel panelDinamicoParametros = new JPanel(new CardLayout());
         
-        // Vista A: Texto para Proyección
+        // Vista A: Texto para Proyección y Parámetros
         JPanel vistaProyeccion = new JPanel(new BorderLayout());
         vistaProyeccion.add(campoParametrosProyeccion, BorderLayout.CENTER);
 
@@ -78,13 +81,11 @@ public class MainGUI {
         JButton botonEjecutar = new JButton("Ejecutar Consulta");
 
         // --- ALINEACIÓN DE ETIQUETAS Y CAMPOS ---
-        // Fila 0: Operación
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.1;
         panelControles.add(new JLabel("Operación:"), gbc);
         gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 0.9; gbc.gridwidth = 3;
         panelControles.add(comboOperacion, gbc);
 
-        // Fila 1: Tabla 1 y Tabla 2
         gbc.gridwidth = 1;
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.1;
         panelControles.add(new JLabel("Tabla 1:"), gbc);
@@ -98,9 +99,8 @@ public class MainGUI {
         gbc.gridx = 3; gbc.gridy = 1; gbc.weightx = 0.4;
         panelControles.add(comboTabla2, gbc);
 
-        // Fila 2: Parámetros / Filtros
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.1;
-        panelControles.add(new JLabel("Parámetros / Filtro:"), gbc);
+        panelControles.add(new JLabel("Atributos / Filtro:"), gbc);
         
         gbc.gridx = 1; gbc.gridy = 2; gbc.weightx = 0.9; gbc.gridwidth = 3;
         panelControles.add(panelDinamicoParametros, gbc);
@@ -128,7 +128,6 @@ public class MainGUI {
             }
         };
 
-        // Escuchador dinámico de Operación
         comboOperacion.addActionListener(e -> {
             CardLayout cl = (CardLayout) (panelDinamicoParametros.getLayout());
             String op = (String) comboOperacion.getSelectedItem();
@@ -145,14 +144,12 @@ public class MainGUI {
             comboTabla2.setEnabled(esBinaria);
         });
 
-        // Escuchador de cambios en Tabla 1
         comboTabla1.addActionListener(e -> {
             if ("Selección (Filtro Dinámico)".equals(comboOperacion.getSelectedItem())) {
                 actualizarAtributosTabla1.run();
             }
         });
 
-        // Estado inicial
         actualizarAtributosTabla1.run();
         comboTabla2.setEnabled(false);
         labelTabla2.setEnabled(false);
@@ -186,12 +183,14 @@ public class MainGUI {
                         if (t2 == null) throw new IllegalArgumentException("La Tabla 2 '" + nomTabla2 + "' no existe.");
                         OperacionBinaria union = new Union();
                         resultado = union.ejecutar(t1, t2);
+                        resultado = aplicarProyeccionOpcional(resultado, campoParametrosProyeccion.getText().trim());
                         break;
 
                     case "Producto Cartesiano":
                         if (t2 == null) throw new IllegalArgumentException("La Tabla 2 '" + nomTabla2 + "' no existe.");
                         OperacionBinaria cartesiano = new ProductoCartesiano();
                         resultado = cartesiano.ejecutar(t1, t2);
+                        resultado = aplicarProyeccionOpcional(resultado, campoParametrosProyeccion.getText().trim());
                         break;
 
                     case "Selección (Filtro Dinámico)":
@@ -216,6 +215,8 @@ public class MainGUI {
                 }
 
                 if (resultado != null) {
+                    // Ordenamos el resultado por la primera columna (ej: ID) antes de mostrarlo
+                    resultado = ordenarRelacionPorPrimerAtributo(resultado);
                     String textoSalida = ImpresorConsola.obtenerRelacionComoString(operacion, resultado);
                     areaResultados.setText(textoSalida);
                 }
@@ -230,6 +231,47 @@ public class MainGUI {
         frame.add(panelBoton, BorderLayout.SOUTH);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+    }
+
+    /**
+     * Aplica proyección si el usuario escribió columnas específicas en vez de "*".
+     */
+    private static Relacion aplicarProyeccionOpcional(Relacion rel, String parametros) {
+        if (parametros == null || parametros.isEmpty() || "*".equals(parametros)) {
+            return rel;
+        }
+        List<String> atributos = Arrays.asList(parametros.split("\\s*,\\s*"));
+        OperacionUnaria proyeccion = new Proyeccion(atributos);
+        return proyeccion.ejecutar(rel);
+    }
+
+    /**
+     * Ordena las tuplas de la relación basándose en el valor de la primera columna (ID/Clave).
+     */
+    private static Relacion ordenarRelacionPorPrimerAtributo(Relacion rel) {
+        List<List<String>> tuplas = new ArrayList<>(rel.getTuplas());
+        
+        Collections.sort(tuplas, new Comparator<List<String>>() {
+            @Override
+            public int compare(List<String> t1, List<String> t2) {
+                if (t1.isEmpty() || t2.isEmpty()) return 0;
+                String v1 = t1.get(0);
+                String v2 = t2.get(0);
+                try {
+                    Double n1 = Double.parseDouble(v1);
+                    Double n2 = Double.parseDouble(v2);
+                    return n1.compareTo(n2);
+                } catch (NumberFormatException e) {
+                    return v1.compareToIgnoreCase(v2);
+                }
+            }
+        });
+
+        Relacion ordenada = new Relacion(rel.getAtributos());
+        for (List<String> tupla : tuplas) {
+            ordenada.agregarTupla(tupla);
+        }
+        return ordenada;
     }
 
     private static boolean evaluarCondicion(String valorTupla, String operador, String valorBuscado) {
