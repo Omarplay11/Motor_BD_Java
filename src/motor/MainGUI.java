@@ -1,20 +1,18 @@
 package motor;
 
-import motor.algebra.*;
-import motor.io.ImpresorConsola;
-import motor.io.LectorCSV;
-import motor.modelo.Relacion;
-
-import javax.swing.*;
 import java.awt.*;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import javax.swing.*;
+import motor.algebra.*;
+import motor.io.ImpresorConsola;
+import motor.io.LectorCSV;
+import motor.modelo.Relacion;
 
 public class MainGUI {
-    // Almacenamiento en memoria de tus tablas
     private static Map<String, Relacion> baseDeDatos = new HashMap<>();
 
     public static void main(String[] args) {
@@ -24,63 +22,152 @@ public class MainGUI {
         baseDeDatos.put("cursos", LectorCSV.cargarRelacion("datos/cursos.csv"));
 
         // 2. CREAR LA VENTANA PRINCIPAL
-        JFrame frame = new JFrame("Motor de Base de Datos");
+        JFrame frame = new JFrame("Motor de Base de Datos - Álgebra Relacional");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(850, 600);
+        frame.setSize(950, 650);
         frame.setLayout(new BorderLayout());
 
-        // 3. PANEL DE CONTROLES SUPERIOR
-        JPanel panelControles = new JPanel(new GridLayout(2, 4, 5, 5));
-        panelControles.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        // 3. CONTROLES SUPERIORES (Organizados con GridBagLayout)
+        JPanel panelControles = new JPanel(new GridBagLayout());
+        panelControles.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5); // Margen interno entre componentes
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        JComboBox<String> comboOperacion = new JComboBox<>(new String[]{"Proyección", "Unión", "Producto Cartesiano", "Selección (Prueba Edad)"});
-        
-        // --- CAMBIO AQUÍ: Obtenemos los nombres de las tablas cargadas automáticamente ---
+        JComboBox<String> comboOperacion = new JComboBox<>(new String[]{
+            "Proyección", "Unión", "Producto Cartesiano", "Selección (Filtro Dinámico)"
+        });
+
         String[] nombresTablas = baseDeDatos.keySet().toArray(new String[0]);
         JComboBox<String> comboTabla1 = new JComboBox<>(nombresTablas);
         JComboBox<String> comboTabla2 = new JComboBox<>(nombresTablas);
-        
-        // Seleccionamos opciones por defecto para que sea más fácil probar
+        JLabel labelTabla2 = new JLabel("Tabla 2 (Operación Binaria):");
+
         if (nombresTablas.length > 0) {
             comboTabla1.setSelectedItem("estudiantes");
             comboTabla2.setSelectedItem("estudiantes_nuevos");
         }
+
+        // --- CONTROLES DINÁMICOS PARA PARÁMETROS Y SELECCIÓN ---
+        JTextField campoParametrosProyeccion = new JTextField("nombre, edad");
         
-        JTextField campoParametros = new JTextField("nombre, edad"); 
+        JComboBox<String> comboAtributosTabla1 = new JComboBox<>();
+        JComboBox<String> comboOperador = new JComboBox<>(new String[]{"=", ">", "<", ">=", "<=", "!="});
+        JTextField campoValorFiltro = new JTextField();
+
+        // Panel contenedor dinámico (CardLayout)
+        JPanel panelDinamicoParametros = new JPanel(new CardLayout());
+        
+        // Vista A: Texto para Proyección
+        JPanel vistaProyeccion = new JPanel(new BorderLayout());
+        vistaProyeccion.add(campoParametrosProyeccion, BorderLayout.CENTER);
+
+        // Vista B: Controles (Atributo + Operador + Valor) para Selección
+        JPanel vistaSeleccion = new JPanel(new GridBagLayout());
+        GridBagConstraints gbcSel = new GridBagConstraints();
+        gbcSel.fill = GridBagConstraints.HORIZONTAL;
+        gbcSel.insets = new Insets(0, 2, 0, 2);
+
+        gbcSel.weightx = 0.5; gbcSel.gridx = 0; vistaSeleccion.add(comboAtributosTabla1, gbcSel);
+        gbcSel.weightx = 0.2; gbcSel.gridx = 1; vistaSeleccion.add(comboOperador, gbcSel);
+        gbcSel.weightx = 0.3; gbcSel.gridx = 2; vistaSeleccion.add(campoValorFiltro, gbcSel);
+
+        panelDinamicoParametros.add(vistaProyeccion, "PROYECCION");
+        panelDinamicoParametros.add(vistaSeleccion, "SELECCION");
+
         JButton botonEjecutar = new JButton("Ejecutar Consulta");
 
-        panelControles.add(new JLabel("Operación:"));
-        panelControles.add(comboOperacion);
-        panelControles.add(new JLabel("Tabla 1:"));
-        panelControles.add(comboTabla1);
-        panelControles.add(new JLabel("Tabla 2 (Para Unión/Cartesiano):"));
-        panelControles.add(comboTabla2);
-        panelControles.add(new JLabel("Atributos (Para Proyección):"));
-        panelControles.add(campoParametros);
+        // --- ALINEACIÓN DE ETIQUETAS Y CAMPOS ---
+        // Fila 0: Operación
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.1;
+        panelControles.add(new JLabel("Operación:"), gbc);
+        gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 0.9; gbc.gridwidth = 3;
+        panelControles.add(comboOperacion, gbc);
+
+        // Fila 1: Tabla 1 y Tabla 2
+        gbc.gridwidth = 1;
+        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.1;
+        panelControles.add(new JLabel("Tabla 1:"), gbc);
         
+        gbc.gridx = 1; gbc.gridy = 1; gbc.weightx = 0.4;
+        panelControles.add(comboTabla1, gbc);
+        
+        gbc.gridx = 2; gbc.gridy = 1; gbc.weightx = 0.1;
+        panelControles.add(labelTabla2, gbc);
+        
+        gbc.gridx = 3; gbc.gridy = 1; gbc.weightx = 0.4;
+        panelControles.add(comboTabla2, gbc);
+
+        // Fila 2: Parámetros / Filtros
+        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.1;
+        panelControles.add(new JLabel("Parámetros / Filtro:"), gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 2; gbc.weightx = 0.9; gbc.gridwidth = 3;
+        panelControles.add(panelDinamicoParametros, gbc);
+
         JPanel panelBoton = new JPanel();
         panelBoton.add(botonEjecutar);
 
-        // 4. ÁREA CENTRAL PARA LOS RESULTADOS
+        // 4. ÁREA DE RESULTADOS
         JTextArea areaResultados = new JTextArea();
         areaResultados.setEditable(false);
-        areaResultados.setFont(new Font("Monospaced", Font.PLAIN, 13)); 
+        areaResultados.setFont(new Font("Monospaced", Font.PLAIN, 13));
         JScrollPane scroll = new JScrollPane(areaResultados);
 
-        // 5. LÓGICA DE CONEXIÓN CON TUS CLASES
+        // --- LÓGICA DE ACTUALIZACIÓN DE INTERFAZ ---
+        Runnable actualizarAtributosTabla1 = () -> {
+            comboAtributosTabla1.removeAllItems();
+            String tablaSeleccionada = (String) comboTabla1.getSelectedItem();
+            if (tablaSeleccionada != null && baseDeDatos.containsKey(tablaSeleccionada)) {
+                Relacion rel = baseDeDatos.get(tablaSeleccionada);
+                if (rel != null) {
+                    for (String atr : rel.getAtributos()) {
+                        comboAtributosTabla1.addItem(atr);
+                    }
+                }
+            }
+        };
+
+        // Escuchador dinámico de Operación
+        comboOperacion.addActionListener(e -> {
+            CardLayout cl = (CardLayout) (panelDinamicoParametros.getLayout());
+            String op = (String) comboOperacion.getSelectedItem();
+
+            if ("Selección (Filtro Dinámico)".equals(op)) {
+                actualizarAtributosTabla1.run();
+                cl.show(panelDinamicoParametros, "SELECCION");
+            } else {
+                cl.show(panelDinamicoParametros, "PROYECCION");
+            }
+
+            boolean esBinaria = "Unión".equals(op) || "Producto Cartesiano".equals(op);
+            labelTabla2.setEnabled(esBinaria);
+            comboTabla2.setEnabled(esBinaria);
+        });
+
+        // Escuchador de cambios en Tabla 1
+        comboTabla1.addActionListener(e -> {
+            if ("Selección (Filtro Dinámico)".equals(comboOperacion.getSelectedItem())) {
+                actualizarAtributosTabla1.run();
+            }
+        });
+
+        // Estado inicial
+        actualizarAtributosTabla1.run();
+        comboTabla2.setEnabled(false);
+        labelTabla2.setEnabled(false);
+
+        // 5. LÓGICA DE EJECUCIÓN
         botonEjecutar.addActionListener(e -> {
             String operacion = (String) comboOperacion.getSelectedItem();
-            
-            // --- CAMBIO AQUÍ: Capturamos el dato seleccionado del menú en lugar del texto escrito ---
             String nomTabla1 = (String) comboTabla1.getSelectedItem();
             String nomTabla2 = (String) comboTabla2.getSelectedItem();
-            String parametros = campoParametros.getText().trim();
 
             Relacion t1 = baseDeDatos.get(nomTabla1);
             Relacion t2 = baseDeDatos.get(nomTabla2);
 
             if (t1 == null) {
-                areaResultados.setText("Error: La Tabla 1 '" + nomTabla1 + "' no existe en memoria.");
+                areaResultados.setText("Error: La Tabla 1 '" + nomTabla1 + "' no existe.");
                 return;
             }
 
@@ -89,6 +176,7 @@ public class MainGUI {
 
                 switch (operacion) {
                     case "Proyección":
+                        String parametros = campoParametrosProyeccion.getText().trim();
                         List<String> atributos = Arrays.asList(parametros.split("\\s*,\\s*"));
                         OperacionUnaria proyeccion = new Proyeccion(atributos);
                         resultado = proyeccion.ejecutar(t1);
@@ -106,13 +194,22 @@ public class MainGUI {
                         resultado = cartesiano.ejecutar(t1, t2);
                         break;
 
-                    case "Selección (Prueba Edad)":
-                        int posEdad = t1.posicionAtributo("edad");
+                    case "Selección (Filtro Dinámico)":
+                        String atributoSel = (String) comboAtributosTabla1.getSelectedItem();
+                        String operadorSel = (String) comboOperador.getSelectedItem();
+                        String valorBuscado = campoValorFiltro.getText().trim();
+
+                        if (atributoSel == null || valorBuscado.isEmpty()) {
+                            throw new IllegalArgumentException("Debe seleccionar un atributo e ingresar un valor para filtrar.");
+                        }
+
+                        int posAtributo = t1.posicionAtributo(atributoSel);
+
                         Predicate<List<String>> condicion = tupla -> {
-                            try {
-                                return Integer.parseInt(tupla.get(posEdad)) >= 18;
-                            } catch (Exception ex) { return false; }
+                            String valorTupla = tupla.get(posAtributo);
+                            return evaluarCondicion(valorTupla, operadorSel, valorBuscado);
                         };
+
                         OperacionUnaria seleccion = new Seleccion(condicion);
                         resultado = seleccion.ejecutar(t1);
                         break;
@@ -133,5 +230,34 @@ public class MainGUI {
         frame.add(panelBoton, BorderLayout.SOUTH);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+    }
+
+    private static boolean evaluarCondicion(String valorTupla, String operador, String valorBuscado) {
+        try {
+            double numTupla = Double.parseDouble(valorTupla);
+            double numBuscado = Double.parseDouble(valorBuscado);
+
+            switch (operador) {
+                case "=":  return numTupla == numBuscado;
+                case ">":  return numTupla > numBuscado;
+                case "<":  return numTupla < numBuscado;
+                case ">=": return numTupla >= numBuscado;
+                case "<=": return numTupla <= numBuscado;
+                case "!=": return numTupla != numBuscado;
+                default:   return false;
+            }
+        } catch (NumberFormatException e) {
+            int comp = valorTupla.compareToIgnoreCase(valorBuscado);
+
+            switch (operador) {
+                case "=":  return comp == 0;
+                case ">":  return comp > 0;
+                case "<":  return comp < 0;
+                case ">=": return comp >= 0;
+                case "<=": return comp <= 0;
+                case "!=": return comp != 0;
+                default:   return false;
+            }
+        }
     }
 }
