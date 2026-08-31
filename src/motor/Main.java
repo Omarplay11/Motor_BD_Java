@@ -5,8 +5,6 @@ import motor.algebra.*;
 import motor.io.LectorCSV;
 import motor.io.ImpresorConsola;
 import java.util.Arrays;
-
-import java.util.Arrays;
 import java.util.function.Predicate;
 
 public class Main {
