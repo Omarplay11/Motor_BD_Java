@@ -1,7 +1,7 @@
 package motor.algebra;
 
-import motor.modelo.Relacion;
 import java.util.List;
+import motor.modelo.Relacion;
 
 public class Union implements OperacionBinaria {
 

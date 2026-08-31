@@ -1,9 +1,8 @@
 package motor.algebra;
-
-import motor.modelo.Relacion;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import motor.modelo.Relacion;
 
 public class Proyeccion implements OperacionUnaria {
     private List<String> atributosSeleccionados;

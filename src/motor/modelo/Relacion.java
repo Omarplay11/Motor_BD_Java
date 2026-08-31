@@ -1,18 +1,19 @@
 package motor.modelo;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 
 public class Relacion {
-
-    private List<String> atributos;
-    private List<List<String>> tuplas;
+    private final List<String> atributos;
+    private final Set<List<String>> tuplas;
 
     public Relacion(List<String> atributos){
         if(atributos == null){
             throw new IllegalArgumentException("Los atributos no pueden ser null.");
         }
         this.atributos = new ArrayList<>(atributos);
-        this.tuplas = new ArrayList<>();
+        this.tuplas = new HashSet<>();
     }
 
     public void agregarTupla(List<String> tupla){
